@@ -1,6 +1,6 @@
 CC=gcc
 
-# Non-Local Mean code
+# Non-Local Means code
 NLM_FILTER=nlm
 NLM_FILTER_C=$(NLM_FILTER).c
 
@@ -12,7 +12,7 @@ LOG_FILTER_C=$(LOG_FILTER).c
 FLAGS=-lm
 
 
-# Non-Local Mean Filter
+# Non-Local Means Filter
 all-nlm: | build-nlm run-nlm clean-nlm
 
 build-nlm:
@@ -39,7 +39,7 @@ clean-log:
 
 
 # Clean all
-clean: | clean-log clean-log
+clean-all: | clean-log clean-log
 
 # Do all
 all: | all-nlm all-log
