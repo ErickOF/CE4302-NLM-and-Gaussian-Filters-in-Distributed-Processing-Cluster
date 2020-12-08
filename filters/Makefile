@@ -19,7 +19,7 @@ build-nlm:
 		$(CC) -o $(NLM_FILTER) $(NLM_FILTER_C) $(FLAGS)
 
 run-nlm:
-		./$(NLM_FILTER)
+		time ./$(NLM_FILTER)
 
 clean-nlm:
 		rm -f $(NLM_FILTER)
@@ -32,7 +32,7 @@ build-log:
 		$(CC) -o $(LOG_FILTER) $(LOG_FILTER_C) $(FLAGS)
 
 run-log:
-		./$(LOG_FILTER)
+		time ./$(LOG_FILTER)
 
 clean-log:
 		rm -f $(LOG_FILTER)
