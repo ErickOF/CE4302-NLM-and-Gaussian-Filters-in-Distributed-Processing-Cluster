@@ -1,52 +1,25 @@
 CC=gcc
 
-# Non-Local Means code
-NLM_FILTER=nlm
-NLM_FILTER_C=$(NLM_FILTER).c
+NLM_FILE=nlm
+NLM_C=$(NLM_FILE).c
 
-# Laplacian of Gaussian code
-LOG_FILTER=log
-LOG_FILTER_C=$(LOG_FILTER).c
+GAUSSIAN_FILE=gaussian
+GAUSSIAN_C=$(GAUSSIAN_FILE).c
 
 # Use math library
 FLAGS=-lm
 
 
 # Non-Local Means Filter
-all-nlm: | build-nlm run-nlm clean-nlm
+nlm:
+		$(CC) -o $(NLM_FILE) $(NLM_C) $(FLAGS)
+		@mkdir -p outputs/
+		time ./$(NLM_FILE) $(images)
+		rm -f $(NLM_FILE)
 
-build-nlm:
-		$(CC) -o $(NLM_FILTER) $(NLM_FILTER_C) $(FLAGS)
-
-run-nlm:
-		time ./$(NLM_FILTER)
-
-clean-nlm:
-		rm -f $(NLM_FILTER)
-
-
-# Laplacian of Gaussian Filter
-all-log: | build-log run-log clean-log
-
-build-log:
-		$(CC) -o $(LOG_FILTER) $(LOG_FILTER_C) $(FLAGS)
-
-run-log:
-		time ./$(LOG_FILTER)
-
-clean-log:
-		rm -f $(LOG_FILTER)
-
-
-# Clean all
-clean-all: | clean-log clean-log
-
-# Do all
-all: | all-nlm all-log
-
-# Build all
-build-all: | build-nlm build-log
-
-# Run all
-run-all: |run-nlm run-log
-
+# Gaussian Filter
+gaussian:
+		$(CC) -o $(GAUSSIAN_FILE) $(GAUSSIAN_C) $(FLAGS)
+		@mkdir -p outputs/
+		time ./$(GAUSSIAN_FILE) $(images)
+		rm -f $(GAUSSIAN_FILE)

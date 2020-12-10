@@ -7,7 +7,6 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "libs/stb/stb_image_write.h"
 
-
 void rgb2gray(uint8_t* img, uint8_t* gray_ptr, int img_size)
 {
     uint8_t* img_ptr = img;
@@ -115,50 +114,67 @@ void nlm_filter(uint8_t* img, uint8_t* filtered, int width, int height, int wind
 
 int main(int argc, char* argv[])
 {
-    int width, height, channels;
+    printf("\n");
 
-    // Load image
-    uint8_t* rgb_img = stbi_load("src/input/lena.jpg", &width, &height, &channels, 3);
-
-    if (rgb_img == NULL)
+    if (argc == 1)
     {
-        printf("Error in loading the image.\n");
-        exit(1);
+        printf("Images were not provided.\n");
+    }
+    else
+    {
+        for (int i = 1; i < argc; i++)
+        {
+            int width, height, channels;
+
+            // Load image
+            uint8_t* rgb_img = stbi_load(argv[i], &width, &height, &channels, 3);
+
+            if (rgb_img == NULL)
+            {
+                printf("Error loading the image in %s.\n", argv[i]);
+                continue;
+            }
+
+            // Convert image to gray
+            size_t img_size = width * height * channels;
+            size_t gray_img_size = width * height;
+
+            uint8_t* gray_img = malloc(gray_img_size);
+
+            if (gray_img == NULL)
+            {
+                printf("Unable to allocate memory for the gray image.\n");
+                exit(1);
+            }
+
+            rgb2gray(rgb_img, gray_img, img_size);
+
+            // Allocate memory for the filtered image
+            uint8_t* filtered_img = malloc(gray_img_size);
+
+            if (filtered_img == NULL)
+            {
+                printf("Unable to allocate memory for the filtered image.\n");
+                exit(1);
+            }
+
+            // Non-Local Means filter
+            nlm_filter(gray_img, filtered_img, width, height, 5, 9, 10);
+
+            char output[20];
+            sprintf(output, "%s%d%s", "outputs/", i, ".jpg");
+
+            // Save image
+            stbi_write_jpg(output, width, height, 1, filtered_img, width);
+
+            // Free memory
+            stbi_image_free(rgb_img);
+            stbi_image_free(gray_img);
+            stbi_image_free(filtered_img);
+        }
     }
 
-    // Convert image to gray
-    size_t img_size = width * height * channels;
-    size_t gray_img_size = width * height;
-
-    uint8_t* gray_img = malloc(gray_img_size);
-
-    if (gray_img == NULL)
-    {
-        printf("Unable to allocate memory for the gray image.\n");
-        exit(1);
-    }
-
-    rgb2gray(rgb_img, gray_img, img_size);
-
-    // Allocate memory for the filtered image
-    uint8_t* filtered_img = malloc(gray_img_size);
-
-    if (filtered_img == NULL)
-    {
-        printf("Unable to allocate memory for the filtered image.\n");
-        exit(1);
-    }
-
-    // Non-Local Means filter
-    nlm_filter(gray_img, filtered_img, width, height, 5, 9, 10);
-
-    // Save image
-    stbi_write_jpg("src/output/filtered_image.jpg", width, height, 1, filtered_img, width);
-
-    // Free memory
-    stbi_image_free(rgb_img);
-    stbi_image_free(gray_img);
-    stbi_image_free(filtered_img);
+    printf("\n");
 
     return 0;
 }
