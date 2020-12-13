@@ -31,13 +31,13 @@ void get_window(uint8_t* img, uint8_t* window, int i, int j, int height, int siz
     {
         for (int n = -mid; n < mid + 1; n++)
         {
-            *(window) = (uint8_t) *(img + (i * height + m) + j + n);
+            *(window) = *(img + (i*height + m) + j + n);
             window++;
         }
     }
 }
 
-void get_gaussian_kernel(float* kernel, int size, double stdev)
+void get_gaussian_kernel(double* kernel, int size, double stdev)
 {
     double sum = 0;
     int i, j;
@@ -60,6 +60,8 @@ void get_gaussian_kernel(float* kernel, int size, double stdev)
         {
             kernel[i*size + j] /= sum;
         }
+
+        printf("\n");
     }
 }
 
@@ -67,8 +69,8 @@ void gaussian_filter(uint8_t* img, uint8_t* filtered, int width, int height, int
 {
     int mid_window = (int) (window_size - 1)/2;
 
-    uint8_t* window = calloc(window_size * window_size, sizeof(float));
-    float* gaussian_kernel = calloc(window_size * window_size, sizeof(float));
+    uint8_t* window = (uint8_t*) calloc(window_size * window_size, sizeof(uint8_t));
+    double* gaussian_kernel = (double*) calloc(window_size * window_size, sizeof(double));
 
     get_gaussian_kernel(gaussian_kernel, window_size, stdev);
 
@@ -85,11 +87,21 @@ void gaussian_filter(uint8_t* img, uint8_t* filtered, int width, int height, int
             {
                 for (int v = 0; v < window_size; v++)
                 {
-                    sum += gaussian_kernel[u*window_size + v] * window[u*window_size + v];
+                    sum += gaussian_kernel[u*window_size + v]*((double) window[u*window_size + v]);
                 }
             }
 
-            *(filtered + i*height + j) = (uint8_t) ((int) sum);
+            uint8_t value = 0;
+
+            if (sum > 255)
+            {
+                value = 255;
+            } else if (sum > 0)
+            {
+                value = (uint8_t) sum;
+            }
+
+            filtered[i*height + j] = value;
         }
     }
 
@@ -103,13 +115,16 @@ int main(int argc, char* argv[])
 {
     printf("\n");
 
-    if (argc == 1)
+    if (argc < 4)
     {
-        printf("Images were not provided.\n");
+        printf("Args were not provided. make nlm w=3 sigma=2 imgs=\"img1 img2 img3 etc\".\n");
     }
     else
     {
-        for (int i = 1; i < argc; i++)
+        int win_size = atoi(argv[1]);
+        float sigma = atof(argv[2]);
+
+        for (int i = 3; i < argc; i++)
         {
             int width, height, channels;
 
@@ -126,7 +141,7 @@ int main(int argc, char* argv[])
             size_t img_size = width * height * channels;
             size_t gray_img_size = width * height;
 
-            uint8_t* gray_img = malloc(gray_img_size);
+            uint8_t* gray_img = (uint8_t*) calloc(gray_img_size, sizeof(uint8_t));
 
             if (gray_img == NULL)
             {
@@ -137,7 +152,7 @@ int main(int argc, char* argv[])
             rgb2gray(rgb_img, gray_img, img_size);
 
             // Allocate memory for the filtered image
-            uint8_t* filtered_img = malloc(gray_img_size);
+            uint8_t* filtered_img = (uint8_t*) calloc(gray_img_size, sizeof(uint8_t));
 
             if (filtered_img == NULL)
             {
@@ -146,10 +161,10 @@ int main(int argc, char* argv[])
             }
 
             // Gaussian filter
-            gaussian_filter(gray_img, filtered_img, width, height, 7, 10);
+            gaussian_filter(gray_img, filtered_img, width, height, win_size, sigma);
 
-            char output[36];
-            sprintf(output, "%s%d%s", "outputs/gaussian", i, ".jpg");
+            char output[26];
+            sprintf(output, "%s%d%s", "outputs/gaussian", i - 3, ".jpg");
 
             // Save image
             stbi_write_jpg(output, width, height, 1, filtered_img, width);

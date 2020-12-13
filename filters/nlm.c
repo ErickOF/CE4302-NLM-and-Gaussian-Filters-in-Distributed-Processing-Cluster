@@ -30,24 +30,24 @@ void get_window(uint8_t* img, uint8_t* window, int i, int j, int height, int siz
     {
         for (int n = -mid; n < mid + 1; n++)
         {
-            *(window) = (uint8_t) *(img + (i * height + m) + j + n);
+            *(window) = *(img + (i * height + m) + j + n);
             window++;
         }
     }
 }
 
-void substract(uint8_t* v, uint8_t* u, int size)
+void substract(uint8_t* v, uint8_t* u, double* result_window, int size)
 {
     for (int i = 0; i < size; i++)
     {
         for (int j = 0; j < size; j++)
         {
-            *(v + i*size + j) -= *(u + i*size + j);
+            result_window[i*size + j] = ((double) v[i*size + j]) - ((double) u[i*size + j]);
         }
     }
 }
 
-double norm(uint8_t* v, int size)
+double norm(double* v, int size)
 {
     double sum = 0.0;
 
@@ -55,7 +55,7 @@ double norm(uint8_t* v, int size)
     {
         for (int j = 0; j < size; j++)
         {
-            sum += pow((double) *(v + i*size + j), 2.0);
+            sum += pow(*(v + i*size + j), 2.0);
         }
     }
 
@@ -67,8 +67,9 @@ void nlm_filter(uint8_t* img, uint8_t* filtered, int width, int height, int wind
     int mid_window = (int) (window_size - 1)/2;
     int mid_sim_window = (int) (sim_window_size - 1)/2;
 
-    uint8_t* window = malloc(window_size * window_size);
-    uint8_t* sim_window = malloc(window_size * window_size);
+    uint8_t* window = (uint8_t*) calloc(window_size * window_size, sizeof(uint8_t));
+    uint8_t* sim_window = (uint8_t*) calloc(window_size * window_size, sizeof(uint8_t));
+    double* result_window = (double*) calloc(window_size * window_size, sizeof(double));
 
     for (int i = window_size; i < width - window_size; i++)
     {
@@ -93,22 +94,35 @@ void nlm_filter(uint8_t* img, uint8_t* filtered, int width, int height, int wind
                 {
                     get_window(img, sim_window, u, v, height, window_size);
                     // Similarity between pixels
-                    substract(window, sim_window, window_size);
-                    double norm_value = norm(window, window_size);
+                    substract(window, sim_window, result_window, window_size);
+                    double norm_value = norm(result_window, window_size);
                     double similarity = exp(-norm_value/pow(stdev, 2.0));
 
                     normalization_factor += similarity;
-                    sum += similarity * (*(img + u*height + v));
+                    sum += similarity*(*(img + u*height + v));
                 }
             }
 
-            *(filtered + i*height + j) = (uint8_t) ((int) sum/normalization_factor);
+            double result = sum/normalization_factor;
+            uint8_t value = 0;
+
+            if (result > 255)
+            {
+                value = 255;
+            } else if (result > 0)
+            {
+                value = (uint8_t) result;
+            }
+            
+
+            *(filtered + i*height + j) = value;
         }
     }
 
     // Free memory
     free(window);
     free(sim_window);
+    free(result_window);
 }
 
 
@@ -116,13 +130,17 @@ int main(int argc, char* argv[])
 {
     printf("\n");
 
-    if (argc == 1)
+    if (argc < 5)
     {
-        printf("Images were not provided.\n");
+        printf("Args were not provided. make nlm w=3 sw=7 sigma=2 imgs=\"img1 img2 img3 etc\".\n");
     }
     else
     {
-        for (int i = 1; i < argc; i++)
+        int win_size = atoi(argv[1]);
+        int sim_win_size = atoi(argv[2]);
+        float sigma = atof(argv[3]);
+
+        for (int i = 4; i < argc; i++)
         {
             int width, height, channels;
 
@@ -136,10 +154,10 @@ int main(int argc, char* argv[])
             }
 
             // Convert image to gray
-            size_t img_size = width * height * channels;
-            size_t gray_img_size = width * height;
+            size_t img_size = width*height*channels;
+            size_t gray_img_size = width*height;
 
-            uint8_t* gray_img = malloc(gray_img_size);
+            uint8_t* gray_img = (uint8_t*) calloc(gray_img_size, sizeof(uint8_t));
 
             if (gray_img == NULL)
             {
@@ -150,7 +168,7 @@ int main(int argc, char* argv[])
             rgb2gray(rgb_img, gray_img, img_size);
 
             // Allocate memory for the filtered image
-            uint8_t* filtered_img = malloc(gray_img_size);
+            uint8_t* filtered_img = (uint8_t*) calloc(gray_img_size, sizeof(uint8_t));
 
             if (filtered_img == NULL)
             {
@@ -159,10 +177,10 @@ int main(int argc, char* argv[])
             }
 
             // Non-Local Means filter
-            nlm_filter(gray_img, filtered_img, width, height, 5, 9, 10);
+            nlm_filter(gray_img, filtered_img, width, height, win_size, sim_win_size, sigma);
 
-            char output[20];
-            sprintf(output, "%s%d%s", "outputs/", i, ".jpg");
+            char output[21];
+            sprintf(output, "%s%d%s", "outputs/nlm", i - 4, ".png");
 
             // Save image
             stbi_write_jpg(output, width, height, 1, filtered_img, width);
