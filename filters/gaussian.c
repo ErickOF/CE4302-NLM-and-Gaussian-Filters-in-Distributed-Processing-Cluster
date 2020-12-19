@@ -8,6 +8,14 @@
 #include "libs/stb/stb_image_write.h"
 
 
+/**
+ * This function converts a RGB image to a gray image.
+ *
+ * Params:
+ *      uint8_t* img - image to convert.
+ *      uint8_t* gray_prt - pointer to store the image.
+ *      int img_sime - size of the image.
+ */
 void rgb2gray(uint8_t* img, uint8_t* gray_ptr, int img_size)
 {
     uint8_t* img_ptr = img;
@@ -23,22 +31,50 @@ void rgb2gray(uint8_t* img, uint8_t* gray_ptr, int img_size)
     }
 }
 
-void get_window(uint8_t* img, uint8_t* window, int i, int j, int height, int size)
+/**
+ * This function extracts a window of size x size from an image.
+ *
+ * Params:
+ *      uint8_t* img - image.
+ *      uint8_t* window - pointer to store the windows.
+ *      int i - row in the image to extract the window (center of the
+ *              window).
+ *      int j - column in the image to extract the window (center of
+ *              the window).
+ *      int height - number of rows in the image.
+ *      int size - size of the window.
+ */
+void get_window(uint8_t* img, uint8_t* window, int i, int j, int height,
+                int size)
 {
+    // Get the middle of the window
     int mid = (int) (size - 1)/2;
 
     for (int m = -mid; m < mid + 1; m++)
     {
         for (int n = -mid; n < mid + 1; n++)
         {
-            *(window) = *(img + (i*height + m) + j + n);
+            // Store the image pixel in the window
+            *window = *(img + i*height + m + j + n);
             window++;
         }
     }
 }
 
+/**
+ * This function returns a gaussian kernel of size x size and a
+ * standard deviation of stddev.
+ *
+ * Params:
+ *      double* kernel - pointer to store the kernel.
+ *      int size - size of the kernel.
+ *      double stddev - standard deviation of the gaussian
+ *                      distribution.
+ */
 void get_gaussian_kernel(double* kernel, int size, double stdev)
 {
+    // Get the middle of the window
+    double mid = (size - 1)/2.0;
     double sum = 0;
     int i, j;
 
@@ -46,9 +82,11 @@ void get_gaussian_kernel(double* kernel, int size, double stdev)
     {
         for (j = 0; j < size; j++)
         {
-            double x = i - (size - 1) / 2.0;
-            double y = j - (size - 1) / 2.0;
+            // Get x and y values
+            double x = i - mid;
+            double y = j - mid;
 
+            // Evaluate in the gaussian distribution
             kernel[i*size + j] = exp(-(x*x + y*y)/(2*stdev*stdev));
             sum += kernel[i*size + j];
         }
@@ -58,20 +96,35 @@ void get_gaussian_kernel(double* kernel, int size, double stdev)
     {
         for (j = 0; j < size; j++)
         {
+            // Normalize
             kernel[i*size + j] /= sum;
         }
-
-        printf("\n");
     }
 }
 
-void gaussian_filter(uint8_t* img, uint8_t* filtered, int width, int height, int window_size, double stdev)
+/**
+ * This function performs a gaussian filtering on an image.
+ *
+ * Params:
+ *      uint8_t* img - image to filter.
+ *      uint8_t* filtered - pointer to the filtered image.
+ *      int width - number of rows.
+ *      int height - number of cols.
+ *      int window_size - size of the window.
+ *      double stdev - standard deviation of the gaussian
+ *                     distribution.
+ */
+void gaussian_filter(uint8_t* img, uint8_t* filtered, int width, int height,
+                     int window_size, double stdev)
 {
+    // Get the middle of the window
     int mid_window = (int) (window_size - 1)/2;
 
+    // Get memory for the windows
     uint8_t* window = (uint8_t*) calloc(window_size * window_size, sizeof(uint8_t));
     double* gaussian_kernel = (double*) calloc(window_size * window_size, sizeof(double));
 
+    // Get the gaussian kernel
     get_gaussian_kernel(gaussian_kernel, window_size, stdev);
 
     for (int i = window_size; i < width - window_size; i++)
@@ -80,9 +133,10 @@ void gaussian_filter(uint8_t* img, uint8_t* filtered, int width, int height, int
         {
             double sum = 0.0;
 
+            // Get the window from the image
             get_window(img, window, i, j, height, window_size);
 
-            // Compare window against the similarity window
+            // Compute the new value for the center pixel
             for (int u = 0; u < window_size; u++)
             {
                 for (int v = 0; v < window_size; v++)
@@ -93,6 +147,8 @@ void gaussian_filter(uint8_t* img, uint8_t* filtered, int width, int height, int
 
             uint8_t value = 0;
 
+            // Keep the pixel value between 0 and 255, avoiding
+            // unexpected values
             if (sum > 255)
             {
                 value = 255;
@@ -101,6 +157,7 @@ void gaussian_filter(uint8_t* img, uint8_t* filtered, int width, int height, int
                 value = (uint8_t) sum;
             }
 
+            // Set the pixel
             filtered[i*height + j] = value;
         }
     }
@@ -117,13 +174,15 @@ int main(int argc, char* argv[])
 
     if (argc < 4)
     {
-        printf("Args were not provided. make nlm w=3 sigma=2 imgs=\"img1 img2 img3 etc\".\n");
+        printf("Args were not provided. `make nlm w=3 sigma=2 imgs=\"img1 img2 img3 etc\"`.\n");
     }
     else
     {
+        // Convert to numbers
         int win_size = atoi(argv[1]);
         float sigma = atof(argv[2]);
 
+        // Apply the filter to all images
         for (int i = 3; i < argc; i++)
         {
             int width, height, channels;
@@ -160,7 +219,7 @@ int main(int argc, char* argv[])
                 exit(1);
             }
 
-            // Gaussian filter
+            // Gaussian filtering
             gaussian_filter(gray_img, filtered_img, width, height, win_size, sigma);
 
             char output[26];
