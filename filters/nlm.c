@@ -112,8 +112,8 @@ double norm(double* v, int size)
  * Params:
  *      uint8_t* img - image to filter.
  *      uint8_t* filtered - pointer to the filtered image.
- *      int width - number of rows.
- *      int height - number of cols.
+ *      int width - number of cols.
+ *      int height - number of rows.
  *      int window_size - size of the window.
  *      int sim_window_size - size of the similarity window.
  *      double stdev - standard deviation of the gaussian
@@ -127,13 +127,13 @@ void nlm_filter(uint8_t* img, uint8_t* filtered, int width, int height,
     int mid_sim_window = (int) (sim_window_size - 1)/2;
 
     // Get memory for the windows
-    uint8_t* window = (uint8_t*) calloc(window_size * window_size, sizeof(uint8_t));
-    uint8_t* sim_window = (uint8_t*) calloc(window_size * window_size, sizeof(uint8_t));
-    double* result_window = (double*) calloc(window_size * window_size, sizeof(double));
+    uint8_t* window = (uint8_t*) calloc(window_size*window_size, sizeof(uint8_t));
+    uint8_t* sim_window = (uint8_t*) calloc(window_size*window_size, sizeof(uint8_t));
+    double* result_window = (double*) calloc(window_size*window_size, sizeof(double));
 
-    for (int i = window_size; i < width - window_size; i++)
+    for (int i = window_size; i < height - window_size; i++)
     {
-        for (int j = window_size; j < height - window_size; j++)
+        for (int j = window_size; j < width - window_size; j++)
         {
             double sum = 0.0;
 
@@ -142,9 +142,9 @@ void nlm_filter(uint8_t* img, uint8_t* filtered, int width, int height,
 
             // Values for the similarity window
             int umin = MAX(i - mid_sim_window, mid_window);
-            int umax = MIN(i + mid_sim_window, width - mid_window);
+            int umax = MIN(i + mid_sim_window, height - mid_window);
             int vmin = MAX(j - mid_sim_window, mid_window);
-            int vmax = MIN(j + mid_sim_window, height - mid_window);
+            int vmax = MIN(j + mid_sim_window, width - mid_window);
 
             double normalization_factor = 0.0;
 
@@ -162,7 +162,7 @@ void nlm_filter(uint8_t* img, uint8_t* filtered, int width, int height,
                     double similarity = exp(-norm_value/pow(stdev, 2.0));
 
                     normalization_factor += similarity;
-                    sum += similarity*img[u*height + v];
+                    sum += similarity*img[u*width + v];
                 }
             }
 
@@ -177,11 +177,10 @@ void nlm_filter(uint8_t* img, uint8_t* filtered, int width, int height,
                 value = 255;
             } else if (result > 0)
             {
-                value = (uint8_t) result;
+                value = (uint8_t) round(result);
             }
-            
 
-            filtered[i*height + j] = value;
+            filtered[i*width + j] = value;
         }
     }
 
@@ -194,8 +193,6 @@ void nlm_filter(uint8_t* img, uint8_t* filtered, int width, int height,
 
 int main(int argc, char* argv[])
 {
-    printf("\n");
-
     if (argc < 5)
     {
         printf("Args were not provided. `make nlm w=3 sw=7 sigma=2.0 imgs=\"img1 img2 img3 etc\"`.\n");
@@ -258,8 +255,6 @@ int main(int argc, char* argv[])
             stbi_image_free(filtered_img);
         }
     }
-
-    printf("\n");
 
     return 0;
 }

@@ -41,10 +41,10 @@ void rgb2gray(uint8_t* img, uint8_t* gray_ptr, int img_size)
  *              window).
  *      int j - column in the image to extract the window (center of
  *              the window).
- *      int height - number of rows in the image.
+ *      int width - number of columns in the image.
  *      int size - size of the window.
  */
-void get_window(uint8_t* img, uint8_t* window, int i, int j, int height,
+void get_window(uint8_t* img, uint8_t* window, int i, int j, int width,
                 int size)
 {
     // Get the middle of the window
@@ -55,7 +55,7 @@ void get_window(uint8_t* img, uint8_t* window, int i, int j, int height,
         for (int n = -mid; n < mid + 1; n++)
         {
             // Store the image pixel in the window
-            *window = *(img + i*height + m + j + n);
+            *window = *(img + i*width + m + j + n);
             window++;
         }
     }
@@ -108,8 +108,8 @@ void get_gaussian_kernel(double* kernel, int size, double stdev)
  * Params:
  *      uint8_t* img - image to filter.
  *      uint8_t* filtered - pointer to the filtered image.
- *      int width - number of rows.
- *      int height - number of cols.
+ *      int width - number of cols.
+ *      int height - number of rows.
  *      int window_size - size of the window.
  *      double stdev - standard deviation of the gaussian
  *                     distribution.
@@ -121,20 +121,20 @@ void gaussian_filter(uint8_t* img, uint8_t* filtered, int width, int height,
     int mid_window = (int) (window_size - 1)/2;
 
     // Get memory for the windows
-    uint8_t* window = (uint8_t*) calloc(window_size * window_size, sizeof(uint8_t));
-    double* gaussian_kernel = (double*) calloc(window_size * window_size, sizeof(double));
+    uint8_t* window = (uint8_t*) calloc(window_size*window_size, sizeof(uint8_t));
+    double* gaussian_kernel = (double*) calloc(window_size*window_size, sizeof(double));
 
     // Get the gaussian kernel
     get_gaussian_kernel(gaussian_kernel, window_size, stdev);
 
-    for (int i = window_size; i < width - window_size; i++)
+    for (int i = window_size; i < height - window_size; i++)
     {
-        for (int j = window_size; j < height - window_size; j++)
+        for (int j = window_size; j < width - window_size; j++)
         {
             double sum = 0.0;
 
             // Get the window from the image
-            get_window(img, window, i, j, height, window_size);
+            get_window(img, window, i, j, width, window_size);
 
             // Compute the new value for the center pixel
             for (int u = 0; u < window_size; u++)
@@ -154,11 +154,11 @@ void gaussian_filter(uint8_t* img, uint8_t* filtered, int width, int height,
                 value = 255;
             } else if (sum > 0)
             {
-                value = (uint8_t) sum;
+                value = (uint8_t) round(sum);
             }
 
             // Set the pixel
-            filtered[i*height + j] = value;
+            filtered[i*width + j] = value;
         }
     }
 
@@ -170,8 +170,6 @@ void gaussian_filter(uint8_t* img, uint8_t* filtered, int width, int height,
 
 int main(int argc, char* argv[])
 {
-    printf("\n");
-
     if (argc < 4)
     {
         printf("Args were not provided. `make nlm w=3 sigma=1.5 imgs=\"img1 img2 img3 etc\"`.\n");
@@ -234,8 +232,6 @@ int main(int argc, char* argv[])
             stbi_image_free(filtered_img);
         }
     }
-
-    printf("\n");
 
     return 0;
 }
