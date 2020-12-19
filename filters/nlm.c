@@ -131,9 +131,9 @@ void nlm_filter(uint8_t* img, uint8_t* filtered, int width, int height,
     uint8_t* sim_window = (uint8_t*) calloc(window_size*window_size, sizeof(uint8_t));
     double* result_window = (double*) calloc(window_size*window_size, sizeof(double));
 
-    for (int i = window_size; i < height - window_size; i++)
+    for (int i = mid_window; i < height - mid_window; i++)
     {
-        for (int j = window_size; j < width - window_size; j++)
+        for (int j = mid_window; j < width - mid_window; j++)
         {
             double sum = 0.0;
 

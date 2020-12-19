@@ -126,11 +126,11 @@ void gaussian_filter(uint8_t* img, uint8_t* filtered, int width, int height,
     double* gaussian_kernel = (double*) calloc(window_size*window_size, sizeof(double));
 
     // Get the gaussian kernel
-    get_gaussian_kernel(gaussian_kernel, window_size, stdev);
+    get_gaussian_kernel(gaussian_kernel, mid_window, stdev);
 
-    for (int i = window_size; i < height - window_size; i++)
+    for (int i = mid_window; i < height - mid_window; i++)
     {
-        for (int j = window_size; j < width - window_size; j++)
+        for (int j = mid_window; j < width - mid_window; j++)
         {
             double sum = 0.0;
 
