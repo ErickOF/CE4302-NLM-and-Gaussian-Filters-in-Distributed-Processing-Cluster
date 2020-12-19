@@ -174,7 +174,7 @@ int main(int argc, char* argv[])
 
     if (argc < 4)
     {
-        printf("Args were not provided. `make nlm w=3 sigma=2 imgs=\"img1 img2 img3 etc\"`.\n");
+        printf("Args were not provided. `make nlm w=3 sigma=1.5 imgs=\"img1 img2 img3 etc\"`.\n");
     }
     else
     {
